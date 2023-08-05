@@ -1,0 +1,4 @@
+asyncio
+discord
+python-dotenv
+googletrans
