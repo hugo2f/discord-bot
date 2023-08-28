@@ -27,14 +27,27 @@ country_flags = {
     '🇨🇳': 'zh-cn',
 }
 
-async def play_sound(voice_client, audio_name):
-    global STOP
-    if os.path.exists(f'audios/{audio_name}.mp3'): # audio needs to exist
+audios = list(file.split('.')[0] for file in os.listdir('./audios'))
+AUDIO_LIST = '\n'.join(f"{idx + 1}. {file}" for idx, file in enumerate(audios))
+
+
+def get_audio_source(audio_name):
+    audio_source = None
+    if os.path.exists(f'audios/{audio_name}.mp3'):  # audio needs to exist
         audio_source = discord.FFmpegPCMAudio(f'audios/{audio_name}.mp3')
     elif os.path.exists(f'audios/{audio_name}.m4a'):
         audio_source = discord.FFmpegPCMAudio(f'audios/{audio_name}.m4a')
-    else:
-        return
+    return audio_source
+
+
+async def play_audio(voice_client, audio_name):
+    global STOP
+    try:
+        idx = int(audio_name) - 1
+        audio_name = audios[idx]
+    except ValueError:
+        pass
+    audio_source = get_audio_source(audio_name)
     print(f'Playing {audio_name}')
     volume = 0.1
     if audio_name in VOLUMES:
@@ -48,9 +61,11 @@ async def play_sound(voice_client, audio_name):
             voice_client.stop()
             return
 
+
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user}')
+
 
 @bot.event
 async def on_raw_reaction_add(payload):
@@ -64,6 +79,7 @@ async def on_raw_reaction_add(payload):
         lang = country_flags[payload.emoji]
         translation = translator.translate(payload.message.content, dest=lang)
         await msg.reply(translation.text)
+
 
 @bot.event
 async def on_voice_state_update(member, before, after):
@@ -79,7 +95,7 @@ async def on_voice_state_update(member, before, after):
             bot_voice_client = voice_client
             break
 
-    if bot_voice_client and bot_voice_client.is_playing(): # wait until prev audio finishes
+    if bot_voice_client and bot_voice_client.is_playing():  # wait until prev audio finishes
         await asyncio.sleep(1)
 
     if bot_voice_client is None:
@@ -89,13 +105,14 @@ async def on_voice_state_update(member, before, after):
 
     prev_voice_channel = bot_voice_client.channel if bot_voice_client else None
 
-    await asyncio.sleep(1.5) # wait for them to connect to the channel
-    await play_sound(bot_voice_client, 'nihao')
+    await asyncio.sleep(1.5)  # wait for them to connect to the channel
+    await play_audio(bot_voice_client, 'nihao')
 
     if prev_voice_channel is not None:
         await bot_voice_client.move_to(prev_voice_channel)
     else:
         await bot_voice_client.disconnect()
+
 
 @bot.event
 async def on_message(msg):
@@ -121,6 +138,7 @@ async def on_message(msg):
                 response = ''
         if response:
             await msg.reply(response)
+
 
 @bot.command()
 async def play(ctx, audio_name=None, channel_name=None):
@@ -149,23 +167,24 @@ async def play(ctx, audio_name=None, channel_name=None):
     elif not bot_voice_client:
         bot_voice_client = await voice_channel.connect()
 
-    await play_sound(bot_voice_client, audio_name)
+    await play_audio(bot_voice_client, audio_name)
 
     if prev_voice_channel is not None:
         await bot_voice_client.move_to(prev_voice_channel)
     else:
         await bot_voice_client.disconnect()
 
+
 @bot.command()
 async def join(ctx, channel_name=None):
     if channel_name:
         voice_channel = discord.utils.get(ctx.guild.voice_channels, name=channel_name)
-        if voice_channel is None: # channel_name is not a valid channel
+        if voice_channel is None:  # channel_name is not a valid channel
             return
     else:
         voice_channel = ctx.author.voice.channel if ctx.author.voice else None
         if voice_channel is None:
-            return # no channel_name and author not in a channel
+            return  # no channel_name and author not in a channel
     # check if the bot is already in a voice channel
     voice_client = ctx.voice_client
     if voice_client:
@@ -179,17 +198,19 @@ async def join(ctx, channel_name=None):
     else:
         await voice_channel.connect()
 
-audios = list(file.split('.')[0] for file in os.listdir('./audios'))
-AUDIO_LIST = ', '.join(audios)
 
 @bot.command()
-async def audio(ctx):
+async def audios(ctx):
     await ctx.reply(AUDIO_LIST)
 
+
 bot.remove_command("help")
+
+
 @bot.command()
 async def help(ctx):
-    await ctx.reply("Commands: play <name> (channel), stop, join, leave, audio")
+    await ctx.reply("Commands: play <name/id> (channel), stop, join, leave, audios")
+
 
 @bot.command()
 async def leave(ctx):
@@ -201,10 +222,12 @@ async def leave(ctx):
     # disconnect the bot from the current voice channel
     await ctx.voice_client.disconnect()
 
+
 @bot.command()
 async def stop(ctx):
     global STOP
     STOP = True
     await ctx.message.delete()
+
 
 bot.run(TOKEN)  # Start the Discord bot
