@@ -1,4 +1,6 @@
 asyncio
-discord
+discord.py
 python-dotenv
 googletrans
+pynacl
+json

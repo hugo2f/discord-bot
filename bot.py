@@ -4,20 +4,41 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from googletrans import Translator
+import json
+import atexit
+
+
+def update_volumes():
+    # remove unnecessary entries in VOLUMES
+    to_remove = []
+    for audio, volume in VOLUMES.items():
+        if volume != DEFAULT_VOLUME:
+            continue
+        if not (os.path.exists(f'audios/{audio}.mp3')
+                or os.path.exists(f'audios/{audio}.m4a')):
+            to_remove.append(audio)
+    for audio in to_remove:
+        del VOLUMES[audio]
+
+    with open('volumes.json', 'w') as fout:
+        json.dump(VOLUMES, fout, indent=4)
+    print('volume.json updated')
+
+
+atexit.register(update_volumes)
 
 load_dotenv()  # Load environment variables from .env file
-
-translator = Translator()
 TOKEN = os.getenv('DISCORD_TOKEN')  # Discord bot token
 bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
+translator = Translator()
+
+# Read the dictionary from the JSON file
+with open('volumes.json', 'r') as fin:
+    VOLUMES = json.load(fin)
+DEFAULT_VOLUME = 0.3
+TRANSLATE = True
 JUAN = False
 STOP = False
-VOLUMES = {
-    'maren': 0.5,
-    'ganma': 0.5,
-    'storm': 0.2,
-    'fit': 0.7,
-}
 
 country_flags = {
     '🇺🇸': 'en',
@@ -27,8 +48,8 @@ country_flags = {
     '🇨🇳': 'zh-cn',
 }
 
-audios = list(file.split('.')[0] for file in os.listdir('./audios'))
-AUDIO_LIST = '\n'.join(f"{idx + 1}. {file}" for idx, file in enumerate(audios))
+audio_names = list(file.split('.')[0] for file in os.listdir('./audios'))
+AUDIO_LIST = '\n'.join(f"{idx + 1}. {file}" for idx, file in enumerate(audio_names))
 
 
 def get_audio_source(audio_name):
@@ -44,15 +65,15 @@ async def play_audio(voice_client, audio_name):
     global STOP
     try:
         idx = int(audio_name) - 1
-        audio_name = audios[idx]
+        audio_name = audio_names[idx]
     except ValueError:
         pass
     audio_source = get_audio_source(audio_name)
     print(f'Playing {audio_name}')
-    volume = 0.1
+    vol = DEFAULT_VOLUME
     if audio_name in VOLUMES:
-        volume = VOLUMES[audio_name]
-    audio_player = discord.PCMVolumeTransformer(audio_source, volume=volume)
+        vol = VOLUMES[audio_name]
+    audio_player = discord.PCMVolumeTransformer(audio_source, volume=vol)
     voice_client.play(audio_player)
     while voice_client.is_playing():
         await asyncio.sleep(1)
@@ -74,10 +95,10 @@ async def on_raw_reaction_add(payload):
         return
     channel = await bot.fetch_channel(payload.channel_id)
     msg = await channel.fetch_message(payload.message_id)
-    print(payload.emoji)
-    if payload.emoji in country_flags and False:
-        lang = country_flags[payload.emoji]
-        translation = translator.translate(payload.message.content, dest=lang)
+    if payload.emoji.name in country_flags and TRANSLATE:
+        lang = country_flags[payload.emoji.name]
+        print(f'Translating {payload.emoji.name} to {lang}')
+        translation = translator.translate(msg.content, dest=lang)
         await msg.reply(translation.text)
 
 
@@ -143,23 +164,28 @@ async def on_message(msg):
 @bot.command()
 async def play(ctx, audio_name=None, channel_name=None):
     # Requirement checks
-    if ctx.author.bot or not audio_name or not os.path.exists(f'{audio_name}.mp3'):
+    if ctx.author.bot or not audio_name:
         return
-
     # execute command after current audio finishes
     if ctx.voice_client and ctx.voice_client.is_playing():
         await asyncio.sleep(1)
 
     author_voice_channel = ctx.author.voice.channel if ctx.author.voice else None
-    if author_voice_channel and not channel_name:
-        voice_channel = author_voice_channel
-    elif channel_name:
+    if channel_name:
         voice_channel = discord.utils.get(ctx.guild.voice_channels, name=channel_name)
-        if voice_channel is None:
-            return
     else:
+        voice_channel = ctx.voice_client.channel if ctx.voice_client else author_voice_channel
+    if voice_channel is None:
         return
 
+    # if author_voice_channel and not channel_name:
+    #     voice_channel = author_voice_channel
+    # elif channel_name:
+    #     voice_channel = discord.utils.get(ctx.guild.voice_channels, name=channel_name)
+    #     if voice_channel is None:
+    #         return
+    # else:
+    #     return
     bot_voice_client = ctx.voice_client
     prev_voice_channel = bot_voice_client.channel if bot_voice_client else None
     if bot_voice_client and bot_voice_client.channel != voice_channel:
@@ -200,6 +226,13 @@ async def join(ctx, channel_name=None):
 
 
 @bot.command()
+async def vol(ctx, audio, volume: float):
+    if 0 <= volume <= 1:
+        VOLUMES[audio] = volume
+        print(f'"{audio}" now has volume {volume}')
+
+
+@bot.command()
 async def audios(ctx):
     await ctx.reply(AUDIO_LIST)
 
@@ -209,7 +242,7 @@ bot.remove_command("help")
 
 @bot.command()
 async def help(ctx):
-    await ctx.reply("Commands: play <name/id> (channel), stop, join, leave, audios")
+    await ctx.reply("Commands: play <name/id> (channel), stop, join, leave, audios, vol <name> <volume>")
 
 
 @bot.command()
