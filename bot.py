@@ -18,7 +18,7 @@ bot.remove_command("help")  # to define custom help command
 with open('volumes.json', 'r') as fin:
     VOLUMES = json.load(fin)
 DEFAULT_VOLUME = 0.3
-TRANSLATE = False
+TRANSLATE = True
 JUAN = False
 stop = False
 _text_channels = []
