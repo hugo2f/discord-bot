@@ -271,37 +271,41 @@ CHANNEL_IDS = {
     'general': 885632562691719233,
     'juaneral': 983893953701101609,
 }
-channel_name = 'general' # default channel
+channel_name = 'general'  # default channel
 
 
 @bot.command()
-async def send(ctx, msg: str = None, *users):
+async def send(ctx, *, msg: str):
     """
     sends msg and mentions user if not None
     prints people that can be mentioned if msg is None
-    :param ctx: bot command purposes
-    :param msg: message to send
-    :param user: refer to table above
-    :return:
     """
-    if msg is None:
+    if not msg:
         await ctx.reply(set(USER_IDS.keys()))
         return
 
     channel = bot.get_channel(CHANNEL_IDS[channel_name])
+    users = None
+    if ',' in msg:
+        msg, users = msg.rsplit(',', 1)
+
     if not users:
         await channel.send(f"{msg}")
         return
 
     users_to_mention = []
-    for username in users:
+    for username in users.split():
         user_obj = await bot.fetch_user(USER_IDS[username])
         users_to_mention.append(user_obj.mention)
     await channel.send(f"{' '.join(users_to_mention)} {msg}")
 
 
 @bot.command()
-async def send_dm(ctx, msg: str, user: str):
+async def send_dm(ctx, msg: str):
+    if ',' not in msg:
+        print('No user selected')
+        return
+    msg, user = msg.rsplit(',', 1)
     user_obj = bot.get_user(USER_IDS[user])
     await user_obj.send(msg)
 
