@@ -17,7 +17,7 @@ bot.remove_command("help")  # to define custom help command
 # Read the dictionary from the JSON file
 with open('volumes.json', 'r') as fin:
     VOLUMES = json.load(fin)
-DEFAULT_VOLUME = 0.5
+DEFAULT_VOLUME = 0.4
 TRANSLATE = True
 JUAN = False
 stop = False
