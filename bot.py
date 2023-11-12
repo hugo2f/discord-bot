@@ -21,7 +21,6 @@ DEFAULT_VOLUME = 0.5
 TRANSLATE = True
 JUAN = False
 stop = False
-_text_channels = []
 
 country_flags = {
     '🇺🇸': 'en',
@@ -113,7 +112,7 @@ async def on_message(msg):
 
 
 @bot.command()
-async def play(ctx, audio_name=None, channel_name=None):
+async def play(ctx, audio_name=None, channel=None):
     async with command_lock:
         # Requirement checks
         if ctx.author.bot or not audio_name:
@@ -123,17 +122,17 @@ async def play(ctx, audio_name=None, channel_name=None):
             await asyncio.sleep(1)
 
         author_voice_channel = ctx.author.voice.channel if ctx.author.voice else None
-        if channel_name:
-            voice_channel = discord.utils.get(ctx.guild.voice_channels, name=channel_name)
+        if channel:
+            voice_channel = discord.utils.get(ctx.guild.voice_channels, name=channel)
         else:
             voice_channel = ctx.voice_client.channel if ctx.voice_client else author_voice_channel
         if voice_channel is None:
             return
 
-        # if author_voice_channel and not channel_name:
+        # if author_voice_channel and not channel:
         #     voice_channel = author_voice_channel
-        # elif channel_name:
-        #     voice_channel = discord.utils.get(ctx.guild.voice_channels, name=channel_name)
+        # elif channel:
+        #     voice_channel = discord.utils.get(ctx.guild.voice_channels, name=channel)
         #     if voice_channel is None:
         #         return
         # else:
@@ -188,18 +187,16 @@ def get_audio_source(audio_name):
 
 
 @bot.command()
-async def join(ctx, channel_name=None):
-    global _text_channels
-    if channel_name:
-        voice_channel = discord.utils.get(ctx.guild.voice_channels, name=channel_name)
-        _text_channels = voice_channel.guild.text_channels
+async def join(ctx, channel=None):
+    if channel:
+        voice_channel = discord.utils.get(ctx.guild.voice_channels, name=channel)
 
-        if voice_channel is None:  # channel_name is not a valid channel
+        if voice_channel is None:  # not a valid channel
             return
     else:
         voice_channel = ctx.author.voice.channel if ctx.author.voice else None
         if voice_channel is None:
-            return  # no channel_name and author not in a channel
+            return  # no channel and author not in a channel
     # check if the bot is already in a voice channel
     voice_client = ctx.voice_client
     if voice_client:
