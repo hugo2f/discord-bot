@@ -1,6 +1,6 @@
 asyncio
 discord.py
 python-dotenv
-googletrans
+googletrans==3.1.0a0
 pynacl
 json
