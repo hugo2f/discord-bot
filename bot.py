@@ -17,7 +17,7 @@ bot.remove_command("help")  # to define custom help command
 # Read the dictionary from the JSON file
 with open('volumes.json', 'r') as fin:
     VOLUMES = json.load(fin)
-DEFAULT_VOLUME = 0.3
+DEFAULT_VOLUME = 0.5
 TRANSLATE = True
 JUAN = False
 stop = False
@@ -162,7 +162,7 @@ async def play_audio(voice_client, audio_name):
         pass
     audio_source = get_audio_source(audio_name)
     if not audio_source:
-        print('Audio not found')
+        print(f'Audio not found: {audio_name}')
         return
     print(f'Playing {audio_name}')
     volume = DEFAULT_VOLUME
@@ -222,7 +222,7 @@ async def vol(ctx, audio, volume: float = None):
     except ValueError:
         pass
     if volume is None:
-        volume = VOLUMES.get(audio, 0)
+        volume = VOLUMES.get(audio, DEFAULT_VOLUME)
         await ctx.reply(f'Current volume: {volume}')
     elif 0 <= volume <= 1:
         VOLUMES[audio] = volume
@@ -279,7 +279,7 @@ channel_name = 'general'  # default channel
 @bot.command()
 async def send(ctx, *, msg: str):
     """
-    command format: !send msg (, people to mention)
+    command format: !send msg (, people to mention separated by spaces)
     sends msg and mentions user if not None
     prints people that can be mentioned if msg is None
     """
@@ -305,6 +305,9 @@ async def send(ctx, *, msg: str):
 
 @bot.command()
 async def send_dm(ctx, *, msg: str):
+    """
+    !send_dm msg, user
+    """
     if ',' not in msg:
         print('No user selected')
         return
