@@ -20,7 +20,7 @@ with open('volumes.json', 'r') as fin:
 DEFAULT_VOLUME = 0.3
 TRANSLATE = False
 JUAN = False
-STOP = False
+stop = False
 _text_channels = []
 
 country_flags = {
@@ -100,6 +100,7 @@ async def on_message(msg):
                 await msg.delete()
             await bot.process_commands(msg)
     elif JUAN:
+        response = None
         if '别卷' in msg.content:
             response = '对啊就是'
         elif '卷' in msg.content:
@@ -107,8 +108,6 @@ async def on_message(msg):
         else:
             if msg.author.name == 'dcm9':
                 response = 'zhm别卷了来打吧'
-            else:
-                response = ''
         if response:
             await msg.reply(response)
 
@@ -155,7 +154,7 @@ async def play(ctx, audio_name=None, channel_name=None):
 
 
 async def play_audio(voice_client, audio_name):
-    global STOP
+    global stop
     try:
         idx = int(audio_name) - 1
         audio_name = AUDIO_NAMES[idx]
@@ -170,8 +169,8 @@ async def play_audio(voice_client, audio_name):
     voice_client.play(audio_player)
     while voice_client.is_playing():
         await asyncio.sleep(1)
-        if STOP:
-            STOP = False
+        if stop:
+            stop = False
             voice_client.stop()
             return
 
@@ -250,8 +249,8 @@ async def leave(ctx):
 
 @bot.command()
 async def stop(ctx):
-    global STOP
-    STOP = True
+    global stop
+    stop = True
 
 
 USER_IDS = {
@@ -277,6 +276,7 @@ channel_name = 'general'  # default channel
 @bot.command()
 async def send(ctx, *, msg: str):
     """
+    command format: !send msg (, people to mention)
     sends msg and mentions user if not None
     prints people that can be mentioned if msg is None
     """
@@ -301,11 +301,12 @@ async def send(ctx, *, msg: str):
 
 
 @bot.command()
-async def send_dm(ctx, msg: str):
+async def send_dm(ctx, *, msg: str):
     if ',' not in msg:
         print('No user selected')
         return
     msg, user = msg.rsplit(',', 1)
+    print(msg, user)
     user_obj = bot.get_user(USER_IDS[user])
     await user_obj.send(msg)
 
