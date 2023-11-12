@@ -306,8 +306,7 @@ async def send_dm(ctx, *, msg: str):
         print('No user selected')
         return
     msg, user = msg.rsplit(',', 1)
-    print(msg, user)
-    user_obj = bot.get_user(USER_IDS[user])
+    user_obj = bot.get_user(USER_IDS[user.strip()])
     await user_obj.send(msg)
 
 
