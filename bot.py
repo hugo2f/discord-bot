@@ -17,7 +17,7 @@ bot.remove_command("help")  # to define custom help command
 # Read the dictionary from the JSON file
 with open('volumes.json', 'r') as fin:
     VOLUMES = json.load(fin)
-DEFAULT_VOLUME = 0.5
+DEFAULT_VOLUME = 0.4
 TRANSLATE = True
 JUAN = False
 stop = False
@@ -30,7 +30,7 @@ country_flags = {
     '🇨🇳': 'zh-cn',
 }
 
-AUDIO_NAMES = list(file.split('.')[0] for file in os.listdir('./audios'))
+AUDIO_NAMES = sorted(list(file.split('.')[0] for file in os.listdir('./audios')))
 AUDIO_LIST = '\n'.join(f"{idx + 1}. {file}" for idx, file in enumerate(AUDIO_NAMES))
 
 
