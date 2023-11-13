@@ -1,6 +1,4 @@
 {
-    "maren": 0.5,
-    "ganma": 0.4,
     "fit": 0.7,
     "fw": 0.8,
     "sb": 0.8,
@@ -9,7 +7,8 @@
     "metal": 0.1,
     "ksante": 0.6,
     "mvp": 0.7,
-    "chun": 0.5,
-    "suzume": 0.4,
-    "chicken": 0.6
+    "suzume": 0.3,
+    "chicken": 0.6,
+    "headshot2": 0.3,
+    "oof": 0.8
 }
