@@ -68,15 +68,14 @@ async def on_voice_state_update(member, before, after):
             bot_voice_client = voice_client
             break
 
-    if bot_voice_client and bot_voice_client.is_playing():  # wait until prev audio finishes
+    if bot_voice_client and bot_voice_client.is_playing(): # wait until prev audio finishes
         await asyncio.sleep(1)
 
+    prev_voice_channel = bot_voice_client.channel if bot_voice_client else None
     if bot_voice_client is None:
         bot_voice_client = await after.channel.connect()
     elif bot_voice_client.channel != after.channel:
         await bot_voice_client.move_to(after.channel)
-
-    prev_voice_channel = bot_voice_client.channel if bot_voice_client else None
 
     await asyncio.sleep(1.5)  # wait for them to connect to the channel
     await play_audio(bot_voice_client, 'nihao')
@@ -84,7 +83,7 @@ async def on_voice_state_update(member, before, after):
     if prev_voice_channel is not None:
         await bot_voice_client.move_to(prev_voice_channel)
     else:
-        await bot_voice_client.disconnect()
+        await bot_voice_client.disconnect(force=True)
 
 
 @bot.event
@@ -142,7 +141,6 @@ async def on_message(msg):
 @bot.command()
 async def play(ctx, audio_name=None, channel=None):
     async with command_lock:
-        # Requirement checks
         if ctx.author.bot or not audio_name:
             return
         # execute command after current audio finishes
@@ -154,17 +152,11 @@ async def play(ctx, audio_name=None, channel=None):
             voice_channel = discord.utils.get(ctx.guild.voice_channels, name=channel)
         else:
             voice_channel = ctx.voice_client.channel if ctx.voice_client else author_voice_channel
+
         if voice_channel is None:
             return
 
-        # if author_voice_channel and not channel:
-        #     voice_channel = author_voice_channel
-        # elif channel:
-        #     voice_channel = discord.utils.get(ctx.guild.voice_channels, name=channel)
-        #     if voice_channel is None:
-        #         return
-        # else:
-        #     return
+        # go back (or leave) to previous channel after playing audio
         bot_voice_client = ctx.voice_client
         prev_voice_channel = bot_voice_client.channel if bot_voice_client else None
         if bot_voice_client and bot_voice_client.channel != voice_channel:
