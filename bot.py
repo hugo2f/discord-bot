@@ -20,7 +20,7 @@ with open('volumes.json', 'r') as fin:
 DEFAULT_VOLUME = 0.4
 TRANSLATE = True
 JUAN = False
-stop = False
+stop_playing = False
 
 country_flags = {
     '🇺🇸': 'en',
@@ -93,7 +93,7 @@ async def on_message(msg):
     if msg.content.startswith(bot.command_prefix):
         command = msg.content.split()[0][len(bot.command_prefix):]
         if command in bot.all_commands:
-            if any(c in command for c in ['play', 'join', 'leave', 'stop']) \
+            if any(c in command for c in ['play', 'join', 'leave', 'stop_playing']) \
                     or command == 'vol' and len(msg.content.split()) > 2:  # only when a volume is given
                 await msg.delete()
             await bot.process_commands(msg)
@@ -125,23 +125,10 @@ async def on_message_delete(msg):
     await msg.channel.send(deleted_message)
 
 
-@bot.event
-async def on_message(msg):
-    if msg.author.bot:  # only react to humans
-        return
-    if msg.content.startswith(bot.command_prefix):
-        command = msg.content.split()[0][len(bot.command_prefix):]
-        if command in bot.all_commands:
-            if any(c in command for c in ['play', 'join', 'leave', 'stop']) \
-                    or command == 'vol' and len(msg.content.split()) > 2:  # only when a volume is given
-                await msg.delete()
-            await bot.process_commands(msg)
-
-
 @bot.command()
 async def play(ctx, audio_name=None, channel=None):
     async with command_lock:
-        if ctx.author.bot or not audio_name:
+        if ctx.author.bot or not audio_name or not get_audio_source(audio_name):
             return
         # execute command after current audio finishes
         if ctx.voice_client and ctx.voice_client.is_playing():
@@ -173,27 +160,26 @@ async def play(ctx, audio_name=None, channel=None):
 
 
 async def play_audio(voice_client, audio_name):
-    global stop
+    global stop_playing
     try:
         idx = int(audio_name) - 1
         audio_name = AUDIO_NAMES[idx]
     except ValueError:
         pass
     audio_source = get_audio_source(audio_name)
-    if not audio_source:
-        print(f'Audio not found: {audio_name}')
-        return
+    # if not audio_source:
+    #     print(f'Audio not found: {audio_name}')
+    #     return
+
     print(f'Playing {audio_name}')
-    volume = DEFAULT_VOLUME
-    if audio_name in VOLUMES:
-        volume = VOLUMES[audio_name]
+    volume = VOLUMES.get(audio_name, DEFAULT_VOLUME)
     audio_player = discord.PCMVolumeTransformer(audio_source, volume=volume)
     voice_client.play(audio_player)
     while voice_client.is_playing():
         await asyncio.sleep(1)
-        if stop:
-            stop = False
-            voice_client.stop()
+        if stop_playing:
+            stop_playing = False
+            voice_client.stop_playing()
             return
 
 
@@ -253,7 +239,7 @@ async def audios(ctx):
 
 @bot.command()
 async def help(ctx):
-    await ctx.reply("Commands: play <name/id> (channel), stop, join, leave, audios, vol <name> <volume>")
+    await ctx.reply("Commands: play <name/id> (channel), stop_playing, join, leave, audios, vol <name> <volume>")
 
 
 @bot.command()
@@ -269,8 +255,8 @@ async def leave(ctx):
 
 @bot.command()
 async def stop(ctx):
-    global stop
-    stop = True
+    global stop_playing
+    stop_playing = True
 
 
 USER_IDS = {
