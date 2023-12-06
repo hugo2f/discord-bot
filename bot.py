@@ -111,6 +111,34 @@ async def on_message(msg):
             await msg.reply(response)
 
 
+@bot.event
+async def on_message_delete(msg):
+    # process human messages only
+    if msg.author.bot:
+        return
+
+    # don't echo commands deleted by the bot
+    if msg.content.startswith(bot.command_prefix):
+        return
+    deleted_message = f"{msg.author.display_name} just recalled:\n{msg.content}"
+
+    # Send the deleted message to the specified channel
+    await msg.channel.send(deleted_message)
+
+
+@bot.event
+async def on_message(msg):
+    if msg.author.bot:  # only react to humans
+        return
+    if msg.content.startswith(bot.command_prefix):
+        command = msg.content.split()[0][len(bot.command_prefix):]
+        if command in bot.all_commands:
+            if any(c in command for c in ['play', 'join', 'leave', 'stop']) \
+                    or command == 'vol' and len(msg.content.split()) > 2:  # only when a volume is given
+                await msg.delete()
+            await bot.process_commands(msg)
+
+
 @bot.command()
 async def play(ctx, audio_name=None, channel=None):
     async with command_lock:
