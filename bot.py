@@ -17,6 +17,15 @@ bot.remove_command("help")  # to define custom help command
 # Read the dictionary from the JSON file
 with open('volumes.json', 'r') as fin:
     VOLUMES = json.load(fin)
+
+# Read the number of messages for each person fron the json file as well
+try:
+    with open('msg.json', 'r') as m:
+        msg_count = json.load(m)
+except json.decoder.JSONDecodeError:
+    msg_count = {}
+
+
 DEFAULT_VOLUME = 0.4
 TRANSLATE = True
 JUAN = False
@@ -33,7 +42,6 @@ country_flags = {
 AUDIO_NAMES = sorted(list(file.split('.')[0] for file in os.listdir('./audios')))
 AUDIO_LIST = '\n'.join(f"{idx + 1}. {file}" for idx, file in enumerate(AUDIO_NAMES))
 
-msg_count = {}
 
 @bot.event
 async def on_ready():
@@ -346,6 +354,11 @@ async def message_count(ctx, *args):
             else:
                 await ctx.send(f"{arg} has sent {msg_count[arg]} message(s).")
 
+@bot.command()
+async def clear_msg(ctx):
+    msg_count = {}
+    await ctx.send(f"Message count cleared.")
+
 
 def update_volumes():
     # remove unnecessary entries in VOLUMES
@@ -364,4 +377,14 @@ def update_volumes():
 
 
 atexit.register(update_volumes)
+
+@atexit.register
+def update_msg_counts():
+    """
+    Updates the msg.json file when the bot is exited.
+    """
+    with open('msg.json', 'w') as fout:
+        json.dump(msg_count, fout, indent=4)
+    print("msg.json updated.")
+
 bot.run(TOKEN)  # Start the Discord bot
