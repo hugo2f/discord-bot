@@ -33,6 +33,7 @@ country_flags = {
 AUDIO_NAMES = sorted(list(file.split('.')[0] for file in os.listdir('./audios')))
 AUDIO_LIST = '\n'.join(f"{idx + 1}. {file}" for idx, file in enumerate(AUDIO_NAMES))
 
+msg_count = {}
 
 @bot.event
 async def on_ready():
@@ -90,6 +91,13 @@ async def on_voice_state_update(member, before, after):
 async def on_message(msg):
     if msg.author.bot:  # only react to humans
         return
+    
+    # Record message that each user sent
+    if msg.author.name not in msg_count:
+        msg_count[msg.author.name] = 1
+    else:
+        msg_count[msg.author.name] += 1
+
     if msg.content.startswith(bot.command_prefix):
         command = msg.content.split()[0][len(bot.command_prefix):]
         if command in bot.all_commands:
@@ -324,6 +332,24 @@ async def setChannel(ctx, new_channel):
     global channel_name
     channel_name = new_channel
     print(f'Current channel: {channel_name} - {CHANNEL_IDS[channel_name]}')
+
+
+@bot.command()
+async def message_count(ctx, *args):
+    if len(args) == 0:
+        for user in msg_count:
+            await ctx.send(f"{user} has sent {msg_count[user]} message(s).")
+    else:
+        for arg in args:
+            if arg not in msg_count:
+                await ctx.send(f"{arg} has not sent any messages.")
+            else:
+                await ctx.send(f"{arg} has sent {msg_count[arg]} message(s).")
+
+@bot.command()
+async def hi(ctx, *args):
+    for arg in args:
+        await ctx.send(f"{arg}, 阿米诺斯!")
 
 
 def update_volumes():
