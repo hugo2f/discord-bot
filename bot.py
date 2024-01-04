@@ -346,11 +346,6 @@ async def message_count(ctx, *args):
             else:
                 await ctx.send(f"{arg} has sent {msg_count[arg]} message(s).")
 
-@bot.command()
-async def hi(ctx, *args):
-    for arg in args:
-        await ctx.send(f"{arg}, 阿米诺斯!")
-
 
 def update_volumes():
     # remove unnecessary entries in VOLUMES
