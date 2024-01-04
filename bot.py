@@ -356,6 +356,7 @@ async def message_count(ctx, *args):
 
 @bot.command()
 async def clear_msg(ctx):
+    global msg_count
     msg_count = {}
     await ctx.send(f"Message count cleared.")
 
