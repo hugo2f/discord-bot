@@ -181,9 +181,9 @@ async def play_audio(voice_client, audio_name):
     except ValueError:
         pass
     audio_source = get_audio_source(audio_name)
-    # if not audio_source:
-    #     print(f'Audio not found: {audio_name}')
-    #     return
+    if not audio_source:
+        print(f'Audio not found: {audio_name}')
+        return
 
     print(f'Playing {audio_name}')
     volume = VOLUMES.get(audio_name, DEFAULT_VOLUME)
