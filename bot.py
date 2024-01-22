@@ -109,7 +109,7 @@ async def on_message(msg):
     if msg.content.startswith(bot.command_prefix):
         command = msg.content.split()[0][len(bot.command_prefix):]
         if command in bot.all_commands:
-            if any(c in command for c in ['play', 'join', 'leave', 'stop_playing']) \
+            if any(c in command for c in ['play', 'join', 'leave', 'stop']) \
                     or command == 'vol' and len(msg.content.split()) > 2:  # only when a volume is given
                 await msg.delete()
             await bot.process_commands(msg)
@@ -183,9 +183,9 @@ async def play_audio(voice_client, audio_name):
     except ValueError:
         pass
     audio_source = get_audio_source(audio_name)
-    # if not audio_source:
-    #     print(f'Audio not found: {audio_name}')
-    #     return
+    if not audio_source:
+        print(f'Audio not found: {audio_name}')
+        return
 
     print(f'Playing {audio_name}')
     volume = VOLUMES.get(audio_name, DEFAULT_VOLUME)
@@ -195,7 +195,8 @@ async def play_audio(voice_client, audio_name):
         await asyncio.sleep(1)
         if stop_playing:
             stop_playing = False
-            voice_client.stop_playing()
+            voice_client.stop()
+            print("Audio stopped")
             return
 
 
