@@ -14,7 +14,7 @@ translator = Translator()
 command_lock = asyncio.Lock()
 bot.remove_command("help")  # to define custom help command
 
-# Read the dictionary from the JSON file
+# initialize audio volumes
 with open('volumes.json', 'r') as fin:
     VOLUMES = json.load(fin)
 
@@ -136,8 +136,6 @@ async def on_message_delete(msg):
     if msg.content.startswith(bot.command_prefix):
         return
     deleted_message = f"{msg.author.display_name} just recalled:\n{msg.content}"
-
-    # Send the deleted message to the specified channel
     await msg.channel.send(deleted_message)
 
 
