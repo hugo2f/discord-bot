@@ -199,6 +199,11 @@ async def play_audio(voice_client, audio_name):
 
 
 def get_audio_source(audio_name):
+    try:
+        idx = int(audio_name) - 1
+        audio_name = AUDIO_NAMES[idx]
+    except ValueError:
+        pass
     audio_source = None
     if os.path.exists(f'audios/{audio_name}.mp3'):  # audio needs to exist
         audio_source = discord.FFmpegPCMAudio(f'audios/{audio_name}.mp3')
