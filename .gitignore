@@ -1,3 +1,5 @@
 bot_test.py
 .env
-msg.json
+client_secrets.json
+settings.yaml
+credentials.json
