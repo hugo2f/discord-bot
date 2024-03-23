@@ -141,8 +141,9 @@ async def on_message(msg):
     if msg.author.bot:  # only react to humans
         return
 
-    # Record message that each user sent
-    msg_counts[msg.author.name] += 1
+    # record message counts in GMZ
+    if msg.guild and msg.guild.id == 885632562691719230:
+        msg_counts[msg.author.name] += 1
 
     if msg.content.startswith(bot.command_prefix):
         command = msg.content.split()[0][len(bot.command_prefix):]
@@ -224,7 +225,7 @@ async def play_audio(voice_client, audio_name):
         return
 
     print(f'Playing {audio_name}')
-    volume = volumes.get(audio_name, DEFAULT_VOLUME)
+    volume = volumes[audio_name]
     audio_player = discord.PCMVolumeTransformer(audio_source, volume=volume)
     voice_client.play(audio_player)
     while voice_client.is_playing():
