@@ -6,26 +6,15 @@ from dotenv import load_dotenv
 from googletrans import Translator
 import json
 import atexit
-
-load_dotenv()  # Load environment variables from .env file
-TOKEN = os.getenv('DISCORD_TOKEN')  # Discord bot token
-bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
-translator = Translator()
-command_lock = asyncio.Lock()
-bot.remove_command("help")  # to define custom help command
-
-# initialize audio volumes
-with open('volumes.json', 'r') as fin:
-    VOLUMES = json.load(fin)
-
-# Read the number of messages for each person fron the json file as well
-try:
-    with open('msg.json', 'r') as m:
-        msg_count = json.load(m)
-except json.decoder.JSONDecodeError:
-    msg_count = {}
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+from collections import defaultdict
+import sys
 
 
+"""
+global variables
+"""
 DEFAULT_VOLUME = 0.4
 TRANSLATE = True
 JUAN = False
@@ -42,6 +31,58 @@ country_flags = {
 AUDIO_NAMES = sorted(list(file.split('.')[0] for file in os.listdir('./audios')))
 AUDIO_LIST = '\n'.join(f"{idx + 1}. {file}" for idx, file in enumerate(AUDIO_NAMES))
 
+
+"""
+initializing
+"""
+# initialize bot
+load_dotenv()  # Load environment variables from .env file
+TOKEN = os.getenv('DISCORD_TOKEN')  # Discord bot token
+bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
+bot.remove_command("help")  # to define custom help command
+
+# initialize misc.
+translator = Translator()
+command_lock = asyncio.Lock()
+
+# initialize pydrive
+google_auth = GoogleAuth()
+drive = GoogleDrive(google_auth)
+
+# initialize msg_counts
+file_list = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
+msg_file = None
+for file in file_list:
+    if file['title'] == 'msg.json':
+        msg_file = file
+        break
+
+if msg_file:
+    msg_file_content = msg_file.GetContentString()
+    msg_counts = defaultdict(int, json.loads(msg_file_content))
+    print('Current msg.json:', msg_counts)
+else:
+    print("'msg.json' not found")
+    sys.exit()
+
+# initialize audio volumes
+volume_file = None
+for file in file_list:
+    if file['title'] == 'volumes.json':
+        volume_file = file
+        break
+
+if volume_file:
+    volume_file_content = volume_file.GetContentString()
+    volumes = defaultdict(lambda: DEFAULT_VOLUME, json.loads(volume_file_content))
+else:
+    print("'volumes.json' not found")
+    sys.exit()
+
+
+"""
+bot events and commands
+"""
 
 @bot.event
 async def on_ready():
@@ -77,7 +118,7 @@ async def on_voice_state_update(member, before, after):
             bot_voice_client = voice_client
             break
 
-    if bot_voice_client and bot_voice_client.is_playing(): # wait until prev audio finishes
+    if bot_voice_client and bot_voice_client.is_playing():  # wait until prev audio finishes
         await asyncio.sleep(1)
 
     prev_voice_channel = bot_voice_client.channel if bot_voice_client else None
@@ -99,12 +140,9 @@ async def on_voice_state_update(member, before, after):
 async def on_message(msg):
     if msg.author.bot:  # only react to humans
         return
-    
+
     # Record message that each user sent
-    if msg.author.name not in msg_count:
-        msg_count[msg.author.name] = 1
-    else:
-        msg_count[msg.author.name] += 1
+    msg_counts[msg.author.name] += 1
 
     if msg.content.startswith(bot.command_prefix):
         command = msg.content.split()[0][len(bot.command_prefix):]
@@ -186,7 +224,7 @@ async def play_audio(voice_client, audio_name):
         return
 
     print(f'Playing {audio_name}')
-    volume = VOLUMES.get(audio_name, DEFAULT_VOLUME)
+    volume = volumes.get(audio_name, DEFAULT_VOLUME)
     audio_player = discord.PCMVolumeTransformer(audio_source, volume=volume)
     voice_client.play(audio_player)
     while voice_client.is_playing():
@@ -245,10 +283,10 @@ async def vol(ctx, audio, volume: float = None):
     except ValueError:
         pass
     if volume is None:
-        volume = VOLUMES.get(audio, DEFAULT_VOLUME)
+        volume = volumes[audio]
         await ctx.reply(f'Current volume: {volume}')
     elif 0 <= volume <= 1:
-        VOLUMES[audio] = volume
+        volumes[audio] = volume
         print(f'"{audio}" now has volume {volume}')
 
 
@@ -350,47 +388,48 @@ async def setChannel(ctx, new_channel):
 @bot.command()
 async def message_count(ctx, *args):
     if len(args) == 0:
-        for user in msg_count:
-            await ctx.send(f"{user} has sent {msg_count[user]} message(s).")
+        for user in msg_counts:
+            await ctx.send(f"{user} has sent {msg_counts[user]} message(s).")
     else:
         for arg in args:
-            if arg not in msg_count:
+            if arg not in msg_counts:
                 await ctx.send(f"{arg} has not sent any messages.")
             else:
-                await ctx.send(f"{arg} has sent {msg_count[arg]} message(s).")
+                await ctx.send(f"{arg} has sent {msg_counts[arg]} message(s).")
+
 
 @bot.command()
 async def clear_msg(ctx):
-    global msg_count
-    msg_count = {}
-    await ctx.send(f"Message count cleared.")
+    global msg_counts
+    msg_counts = defaultdict(int)
+    print('Message counts cleared')
 
 
+@atexit.register
 def update_volumes():
     # remove unnecessary entries in VOLUMES
     to_remove = []
-    for audio, volume in VOLUMES.items():
+    for audio, volume in volumes.items():
         if not (os.path.exists(f'audios/{audio}.mp3')
                 or os.path.exists(f'audios/{audio}.m4a')) \
                 or volume == DEFAULT_VOLUME:
             to_remove.append(audio)
     for audio in to_remove:
-        del VOLUMES[audio]
+        del volumes[audio]
 
-    with open('volumes.json', 'w') as fout:
-        json.dump(VOLUMES, fout, indent=4)
-    print('volume.json updated')
+    volume_file.SetContentString(json.dumps(volumes, indent=4))
+    volume_file.Upload()
+    print('volume.json updated in Google Drive')
 
-
-atexit.register(update_volumes)
 
 @atexit.register
 def update_msg_counts():
     """
     Updates the msg.json file when the bot is exited.
     """
-    with open('msg.json', 'w') as fout:
-        json.dump(msg_count, fout, indent=4)
-    print("msg.json updated.")
+    msg_file.SetContentString(json.dumps(msg_counts, indent=4))
+    msg_file.Upload()
+    print('msg.json updated in Google Drive')
+
 
 bot.run(TOKEN)  # Start the Discord bot
