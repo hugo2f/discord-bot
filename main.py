@@ -9,7 +9,7 @@ import command_handlers
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
-bot.remove_command("help")  # to define custom help command
+bot.remove_command("help") # to define custom help command
 
 # set events and commands
 event_handlers.set_events(bot)
