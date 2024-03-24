@@ -28,7 +28,7 @@ country_flags = {
     '🇨🇳': 'zh-cn',
 }
 
-AUDIO_NAMES = sorted(list(file.split('.')[0] for file in os.listdir('./audios')))
+AUDIO_NAMES = sorted(list(file.split('.')[0] for file in os.listdir('../audios')))
 AUDIO_LIST = '\n'.join(f"{idx + 1}. {file}" for idx, file in enumerate(AUDIO_NAMES))
 
 

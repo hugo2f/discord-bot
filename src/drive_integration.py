@@ -5,12 +5,15 @@ from collections import defaultdict
 import json
 import atexit
 import os
-
-
+from constants import current_dir, AUDIO_NAMES
 
 
 # initialize pydrive
-google_auth = GoogleAuth()
+credentials_path = os.path.join(current_dir, '..', 'credentials.json')
+settings_path = os.path.join(current_dir, '..', 'settings.yaml')
+
+google_auth = GoogleAuth(settings_file=settings_path)
+google_auth.LoadCredentialsFile(credentials_path)
 drive = GoogleDrive(google_auth)
 
 # initialize msg_counts
@@ -51,9 +54,7 @@ def update_volumes():
     # remove unnecessary entries in VOLUMES
     to_remove = []
     for audio, volume in volumes.items():
-        if not (os.path.exists(f'audios/{audio}.mp3')
-                or os.path.exists(f'audios/{audio}.m4a')) \
-                or volume == DEFAULT_VOLUME:
+        if audio not in AUDIO_NAMES or volume == DEFAULT_VOLUME:
             to_remove.append(audio)
     for audio in to_remove:
         del volumes[audio]

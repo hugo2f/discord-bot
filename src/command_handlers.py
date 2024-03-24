@@ -1,9 +1,8 @@
 import asyncio
-import os
 import discord
-from collections import defaultdict
-from drive_integration import msg_counts, volumes
-from utils import play_audio, get_audio_source, AUDIO_NAMES, AUDIO_LIST, set_stop_playing
+from drive_integration import volumes, msg_counts
+from audio_handler import play_audio, get_audio_source, set_stop_playing
+from constants import AUDIO_NAMES, AUDIO_LIST
 
 command_lock = asyncio.Lock()
 
@@ -16,7 +15,7 @@ USER_IDS = {
     'ltz': 880604419903881216,
     'wms': 689384461313507342,
     'xh': 674838013045506067,
-    'me': 827541553476010005,
+    'fsg': 827541553476010005,
     'carl': 754547462147932210,
     'ap': 891395220124626944,
 }
@@ -94,8 +93,11 @@ def set_commands(bot):
         except ValueError:
             pass
         if volume is None:
-            volume = volumes[audio]
-            await ctx.reply(f'Current volume: {volume}')
+            if audio not in AUDIO_NAMES:
+                await ctx.reply('Audio not found')
+            else:
+                volume = volumes[audio]
+                await ctx.reply(f'Current volume: {volume}')
         elif 0 <= volume <= 1:
             volumes[audio] = volume
             print(f'"{audio}" now has volume {volume}')
@@ -185,6 +187,5 @@ def set_commands(bot):
 
     @bot.command()
     async def clear_msg(ctx):
-        global msg_counts
-        msg_counts = defaultdict(int)
+        msg_counts.clear()
         print('Message counts cleared')
