@@ -8,4 +8,3 @@ Translates messages (sometimes) and plays music
 
 ### Running the bot
 Run [`main.py`](./src/main.py) or `python ./src/main.py`
-
