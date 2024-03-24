@@ -2,9 +2,8 @@ import discord
 import asyncio
 from drive_integration import volumes
 import os
+from constants import AUDIO_NAMES, audio_path
 
-AUDIO_NAMES = sorted(list(file.split('.')[0] for file in os.listdir('./audios')))
-AUDIO_LIST = '\n'.join(f"{idx + 1}. {file}" for idx, file in enumerate(AUDIO_NAMES))
 
 stop_playing = False
 async def play_audio(voice_client, audio_name):
@@ -38,12 +37,19 @@ def get_audio_source(audio_name):
         audio_name = AUDIO_NAMES[idx]
     except ValueError:
         pass
-    audio_source = None
-    if os.path.exists(f'audios/{audio_name}.mp3'):  # audio needs to exist
-        audio_source = discord.FFmpegPCMAudio(f'audios/{audio_name}.mp3')
-    elif os.path.exists(f'audios/{audio_name}.m4a'):
-        audio_source = discord.FFmpegPCMAudio(f'audios/{audio_name}.m4a')
-    return audio_source
+
+    if audio_name not in AUDIO_NAMES: # audio needs to exist
+        return None
+
+    mp3_path = os.path.join(audio_path, f'{audio_name}.mp3')
+    m4a_path = os.path.join(audio_path, f'{audio_name}.m4a')
+    if os.path.exists(mp3_path):
+        return discord.FFmpegPCMAudio(mp3_path)
+    elif os.path.exists(m4a_path):
+        return discord.FFmpegPCMAudio(m4a_path)
+    else:
+        print(f'Issue with {audio_name}: not mp3 or m4a')
+        return None
 
 
 def set_stop_playing():

@@ -4,10 +4,13 @@ import discord
 from discord.ext import commands
 import event_handlers
 import command_handlers
+from constants import current_dir
 
 # initialize bot
-load_dotenv()
+dotenv_path = os.path.join(current_dir, '..', '.env')
+load_dotenv(dotenv_path)
 TOKEN = os.getenv('DISCORD_TOKEN')
+
 bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 bot.remove_command("help") # to define custom help command
 

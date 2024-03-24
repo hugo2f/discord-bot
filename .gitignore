@@ -1,5 +1,6 @@
-bot_test.py
+src/bot_test.py
 .env
 client_secrets.json
 settings.yaml
 credentials.json
+/src/__pycache__
