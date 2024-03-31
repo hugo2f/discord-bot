@@ -31,7 +31,7 @@ def set_commands(bot):
     @bot.command()
     async def play(ctx, audio_name=None, channel=None):
         async with command_lock:
-            if ctx.author.bot or not audio_name or not get_audio_source(audio_name):
+            if ctx.author.bot or not audio_name or audio_name not in AUDIO_NAMES:
                 return
             # execute command after current audio finishes
             if ctx.voice_client and ctx.voice_client.is_playing():
