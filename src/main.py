@@ -4,10 +4,10 @@ import discord
 from discord.ext import commands
 import event_handlers
 import command_handlers
-from constants import current_dir
+from constants import CURRENT_DIR
 
 # initialize bot
-dotenv_path = os.path.join(current_dir, '..', '.env')
+dotenv_path = os.path.join(CURRENT_DIR, '..', '.env')
 load_dotenv(dotenv_path)
 TOKEN = os.getenv('DISCORD_TOKEN')
 

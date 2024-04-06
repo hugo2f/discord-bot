@@ -5,12 +5,11 @@ from collections import defaultdict
 import json
 import atexit
 import os
-from constants import current_dir, AUDIO_NAMES
-
+from constants import CURRENT_DIR, AUDIO_NAMES
 
 # initialize pydrive
-credentials_path = os.path.join(current_dir, '..', 'credentials.json')
-settings_path = os.path.join(current_dir, '..', 'settings.yaml')
+credentials_path = os.path.join(CURRENT_DIR, '..', 'credentials.json')
+settings_path = os.path.join(CURRENT_DIR, '..', 'settings.yaml')
 
 google_auth = GoogleAuth(settings_file=settings_path)
 google_auth.LoadCredentialsFile(credentials_path)
@@ -51,6 +50,11 @@ else:
 
 @atexit.register
 def update_volumes():
+    global volumes_changed
+    if not volumes_changed:
+        print('volumes not changed')
+        return
+
     # remove unnecessary entries in VOLUMES
     to_remove = []
     for audio, volume in volumes.items():
@@ -69,6 +73,23 @@ def update_msg_counts():
     """
     Updates the msg.json file when the bot is exited.
     """
+    global msg_counts_changed
+    if not msg_counts_changed:
+        print('msg_counts not changed')
+        return
     msg_file.SetContentString(json.dumps(msg_counts, indent=4))
     msg_file.Upload()
     print('msg.json updated in Google Drive')
+
+volumes_changed = False
+msg_counts_changed = False
+
+
+def set_volumes_changed():
+    global volumes_changed
+    volumes_changed = True
+
+
+def set_msgs_counts_changed():
+    global msg_counts_changed
+    msg_counts_changed = True

@@ -1,30 +1,19 @@
+import configparser
+import os
 import asyncio
 import discord
-from drive_integration import volumes, msg_counts
-from audio_handler import play_audio, get_audio_source, set_stop_playing
-from constants import AUDIO_NAMES, AUDIO_LIST
+from drive_integration import volumes, msg_counts, set_volumes_changed, set_msgs_counts_changed
+from audio_handler import play_audio, set_stop_playing
+from constants import CURRENT_DIR, AUDIO_NAMES, AUDIO_LIST
+
+config = configparser.ConfigParser()
+CONFIG_PATH = os.path.join(CURRENT_DIR, '..', 'variables.ini')
+config.read(CONFIG_PATH)
+USER_IDS = {key: int(value) for key, value in config['USER_IDS'].items()}
+CHANNEL_IDS = {key: int(value) for key, value in config['CHANNEL_IDS'].items()}
+channel_name = config['SETTINGS']['channel_name']
 
 command_lock = asyncio.Lock()
-
-USER_IDS = {
-    'cato': 332017992068104204,
-    'zhm': 687778165573287972,
-    'sdl': 597662493074259972,
-    'glnt': 676967387370618880,
-    'gaj': 675332441388351489,
-    'ltz': 880604419903881216,
-    'wms': 689384461313507342,
-    'xh': 674838013045506067,
-    'fsg': 827541553476010005,
-    'carl': 754547462147932210,
-    'ap': 891395220124626944,
-}
-CHANNEL_IDS = {
-    # Gimme Zhu
-    'general': 885632562691719233,
-    'juaneral': 983893953701101609,
-}
-channel_name = 'general'  # default channel
 
 
 def set_commands(bot):
@@ -62,6 +51,45 @@ def set_commands(bot):
                 await bot_voice_client.disconnect()
 
     @bot.command()
+    async def replay(ctx, audio_name=None, count=0):
+        if count == 0:
+            return
+
+        async with command_lock:
+            if ctx.author.bot or not audio_name or audio_name not in AUDIO_NAMES:
+                return
+            # execute command after current audio finishes
+            if ctx.voice_client and ctx.voice_client.is_playing():
+                await asyncio.sleep(1)
+
+            author_voice_channel = ctx.author.voice.channel if ctx.author.voice else None
+            voice_channel = ctx.voice_client.channel if ctx.voice_client else author_voice_channel
+
+            if voice_channel is None:
+                return
+
+            # go back (or leave) to previous channel after playing audio
+            bot_voice_client = ctx.voice_client
+            prev_voice_channel = bot_voice_client.channel if bot_voice_client else None
+            if bot_voice_client and bot_voice_client.channel != voice_channel:
+                await bot_voice_client.move_to(voice_channel)
+            elif not bot_voice_client:
+                bot_voice_client = await voice_channel.connect()
+
+            try:
+                for _ in range(count):
+                    keep_playing = await play_audio(bot_voice_client, audio_name)
+                    if not keep_playing:
+                        print('Replay stopped')
+                        break
+            finally:
+                # Move back to previous channel or disconnect
+                if prev_voice_channel is not None:
+                    await bot_voice_client.move_to(prev_voice_channel)
+                else:
+                    await bot_voice_client.disconnect()
+
+    @bot.command()
     async def join(ctx, channel=None):
         if channel:
             voice_channel = discord.utils.get(ctx.guild.voice_channels, name=channel)
@@ -92,6 +120,7 @@ def set_commands(bot):
             audio = AUDIO_NAMES[idx]
         except ValueError:
             pass
+
         if volume is None:
             if audio not in AUDIO_NAMES:
                 await ctx.reply('Audio not found')
@@ -99,6 +128,7 @@ def set_commands(bot):
                 volume = volumes[audio]
                 await ctx.reply(f'Current volume: {volume}')
         elif 0 <= volume <= 1:
+            set_volumes_changed()
             volumes[audio] = volume
             print(f'"{audio}" now has volume {volume}')
 
@@ -187,5 +217,6 @@ def set_commands(bot):
 
     @bot.command()
     async def clear_msg(ctx):
+        set_msgs_counts_changed()
         msg_counts.clear()
         print('Message counts cleared')
