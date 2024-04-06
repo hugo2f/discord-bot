@@ -1,6 +1,10 @@
+# local stuff
 src/bot_test.py
+src/__pycache__
+
+# config files
 .env
 client_secrets.json
 settings.yaml
 credentials.json
-/src/__pycache__
+variables.ini
