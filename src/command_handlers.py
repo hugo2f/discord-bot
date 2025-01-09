@@ -20,6 +20,12 @@ def set_commands(bot):
     @bot.command()
     async def play(ctx, audio_name=None, channel=None):
         async with command_lock:
+            try:
+                idx = int(audio_name) - 1
+                audio_name = AUDIO_NAMES[idx]
+            except ValueError:
+                pass
+
             if ctx.author.bot or not audio_name or audio_name not in AUDIO_NAMES:
                 return
             # execute command after current audio finishes
@@ -189,13 +195,20 @@ def set_commands(bot):
             print('No user selected')
             return
         msg, user = msg.rsplit(',', 1)
-        user = user.strip()
+        user = user.strip().lower()
         if user not in USER_IDS:
             print(f'User {user} not found')
             return
 
-        user_obj = bot.get_user(USER_IDS[user.strip()])
-        await user_obj.send(msg)
+        try:
+            user_obj = bot.get_user(USER_IDS[user])
+            await user_obj.send(msg)
+        except AttributeError as e:
+            print('Likely error: the bot can only send to users that have shared a server with the bot')
+            print(e)
+        except Exception as e:
+            print(e)
+
 
     @bot.command()
     async def setChannel(ctx, new_channel):

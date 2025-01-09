@@ -13,11 +13,8 @@ async def play_audio(voice_client, audio_name):
              False if audio not found or stop was called during replay
     """
     global stop_playing
-    try:
-        idx = int(audio_name) - 1
-        audio_name = AUDIO_NAMES[idx]
-    except ValueError:
-        pass
+
+
     audio_source = get_audio_source(audio_name)
     if not audio_source:
         print(f'Audio not found: {audio_name}')
