@@ -8,7 +8,7 @@ from collections import defaultdict
 from constants import AUDIO_NAMES
 
 # initialize audio volumes
-VOLUMES_DIR = os.path.join('..', 'audios')
+VOLUMES_DIR = os.path.join('..', 'volumes.json')
 DEFAULT_VOLUME = 0.4
 volumes = None
 volumes_changed = False
@@ -20,10 +20,10 @@ def set_volumes_changed():
 def fetch_newest_volumes():
     try:
         # Fetch the latest changes from the remote repository
-        subprocess.run(["git", "fetch", "origin"], check=True)
+        subprocess.run(["git", "fetch"], check=True)
 
         # Checkout only the latest version of volumes.json
-        subprocess.run(["git", "checkout", "origin/main", "--", "volumes.json"], check=True)
+        subprocess.run(["git", "checkout", "origin/main", "--", "../volumes.json"], check=True)
 
         print("Successfully fetched volumes.json")
 
@@ -49,7 +49,7 @@ def initialize_volumes():
 def update_volumes():
     global volumes_changed
     if not volumes or not volumes_changed:
-        print('volumes not changed')
+        print('Volumes not changed, no need to push to GitHub')
         return
 
     # remove unnecessary entries in VOLUMES
