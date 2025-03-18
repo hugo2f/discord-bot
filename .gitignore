@@ -5,8 +5,6 @@ src/__pycache__
 # config files
 .env
 client_secrets.json
-settings.yaml
-credentials.json
 variables.ini
 .idea
 

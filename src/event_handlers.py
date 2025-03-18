@@ -1,6 +1,5 @@
 import asyncio
 from googletrans import Translator
-from drive_integration import msg_counts, set_msgs_counts_changed
 from audio_handler import play_audio
 
 """
@@ -75,11 +74,6 @@ def set_events(bot):
     async def on_message(msg):
         if msg.author.bot:  # only react to humans
             return
-
-        # record message counts in GMZ
-        if msg.guild and msg.guild.id == 885632562691719230:
-            set_msgs_counts_changed()
-            msg_counts[msg.author.name] += 1
 
         if msg.content.startswith(bot.command_prefix):
             command = msg.content.split()[0][len(bot.command_prefix):]

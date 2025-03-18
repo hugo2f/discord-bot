@@ -3,4 +3,3 @@ discord.py
 python-dotenv
 googletrans==3.1.0a0
 pynacl
-pydrive

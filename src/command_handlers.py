@@ -2,7 +2,7 @@ import configparser
 import os
 import asyncio
 import discord
-from drive_integration import volumes, msg_counts, set_volumes_changed, set_msgs_counts_changed
+from github_integration import volumes, set_volumes_changed
 from audio_handler import play_audio, set_stop_playing
 from constants import CURRENT_DIR, AUDIO_NAMES, AUDIO_LIST
 
@@ -209,27 +209,8 @@ def set_commands(bot):
         except Exception as e:
             print(e)
 
-
     @bot.command()
     async def setChannel(ctx, new_channel):
         global channel_name
         channel_name = new_channel
         print(f'Current channel: {channel_name} - {CHANNEL_IDS[channel_name]}')
-
-    @bot.command()
-    async def message_count(ctx, *args):
-        if len(args) == 0:
-            for user in msg_counts:
-                await ctx.send(f"{user} has sent {msg_counts[user]} message(s).")
-        else:
-            for arg in args:
-                if arg not in msg_counts:
-                    await ctx.send(f"{arg} has not sent any messages.")
-                else:
-                    await ctx.send(f"{arg} has sent {msg_counts[arg]} message(s).")
-
-    @bot.command()
-    async def clear_msg(ctx):
-        set_msgs_counts_changed()
-        msg_counts.clear()
-        print('Message counts cleared')
